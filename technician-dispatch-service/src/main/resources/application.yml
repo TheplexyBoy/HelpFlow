@@ -1,0 +1,15 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: technician-dispatch-service
+  mvc:
+    problemdetails:
+      enabled: true   # errores de validación en formato ProblemDetail (RFC 7807)
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

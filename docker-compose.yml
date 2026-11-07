@@ -1,0 +1,46 @@
+# Levanta todo el sistema con:  docker compose up --build
+services:
+
+  db:
+    image: postgres:16-alpine
+    container_name: helpflow-db
+    environment:
+      POSTGRES_DB: helpflow
+      POSTGRES_USER: helpflow
+      POSTGRES_PASSWORD: helpflow
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - helpflow-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpflow -d helpflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  technician-dispatch-service:
+    build: ./technician-dispatch-service
+    container_name: technician-dispatch-service
+    ports:
+      # puerto del host : puerto del contenedor (configurable con DISPATCH_PORT)
+      - "${DISPATCH_PORT:-8081}:8081"
+
+  support-ticket-service:
+    build: ./support-ticket-service
+    container_name: support-ticket-service
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/helpflow     # "db" es el nombre del servicio de arriba
+      DB_USER: helpflow
+      DB_PASSWORD: helpflow
+      DISPATCH_URL: http://technician-dispatch-service:8081
+      JWT_SECRET: helpflow-clave-secreta-docker-compose-minimo-32-caracteres
+    depends_on:
+      db:
+        condition: service_healthy
+      technician-dispatch-service:
+        condition: service_started
+
+volumes:
+  helpflow-data:
